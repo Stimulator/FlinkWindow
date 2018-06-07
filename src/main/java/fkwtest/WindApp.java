@@ -28,7 +28,7 @@ public class WindApp {
 
         DataStream <MachineData> stream = env.addSource (new DataCollector1 ( ));
 
-        /*if (stream.filter (reading -> reading.getvTemp ( ) > 100 && reading.getvTemp ( ) < 100) != null) {
+        if (stream.filter (reading -> reading.getvTemp ( ) > 100 && reading.getvTemp ( ) < 100) != null) {
             stream
                     .keyBy (reading -> reading.getvTemp ( ))
                     .window (SlidingTimeWindows.of (Time.seconds (10), Time.seconds (10)))
@@ -47,7 +47,7 @@ public class WindApp {
 
             System.out.println ("Mixed Reading Execution TRIGGERED!");
 
-        }*/
+        }
         if (stream.filter (reading -> reading.getvTemp ( ) < 100)
                 .map (reading -> " == Normal Readings ## RESETTING WINDOW @@@@ Readings: " + reading).print () != null) {
             stream.keyBy (reading -> reading.getvTemp ( ))
