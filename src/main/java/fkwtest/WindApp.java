@@ -5,13 +5,9 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
-import org.apache.flink.streaming.api.functions.windowing.FoldAllWindowFunction;
-import org.apache.flink.streaming.api.functions.windowing.RichAllWindowFunction;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.util.Collector;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 
@@ -26,10 +22,10 @@ public class WindApp {
         env.setStreamTimeCharacteristic (TimeCharacteristic.ProcessingTime);
 
 
-        DataStream <MachineData> stream = env.addSource (new DataCollector1 ( ));
+        DataStream <MachineData> stream = env.addSource (new DataCollector2 ( ));
 
-        if (stream.filter (reading -> reading.getvTemp ( ) > 100 && reading.getvTemp ( ) < 100) != null) {
             stream
+                    .filter (reading -> reading.getvTemp ( ) > 100 && reading.getvTemp ( ) < 100)
                     .keyBy (reading -> reading.getvTemp ( ))
                     .window (SlidingTimeWindows.of (Time.seconds (10), Time.seconds (10)))
                     .apply (new WindowFunction <MachineData, Object, Integer, TimeWindow> ( ) {
@@ -43,14 +39,13 @@ public class WindApp {
                             }
                             collector.collect (integer);
                         }
-                    }).map (reading -> "-- Mixed Readings ##### RESETTING WINDOW! @@@ READINGS: " + reading).print ( );
+                    }).map (reading -> " -- Mixed Readings ##### RESETTING WINDOW! @@@ READINGS: " + reading).print ( );
 
-            System.out.println ("Mixed Reading Execution TRIGGERED!");
+            System.out.println ("Mixed Reading Execution Window TRIGGERED! Waiting for Stream**** ");
 
-        }
-        if (stream.filter (reading -> reading.getvTemp ( ) < 100)
-                .map (reading -> " == Normal Readings ## RESETTING WINDOW @@@@ Readings: " + reading).print () != null) {
-            stream.keyBy (reading -> reading.getvTemp ( ))
+            stream
+                    .filter (reading -> reading.getvTemp ( ) <= 100)
+                            .keyBy (reading -> reading.getvTemp ( ))
                     .window (SlidingTimeWindows.of (Time.seconds (10), Time.seconds (10)))
                     .apply (new WindowFunction <MachineData, Object, Integer, TimeWindow> ( ) {
                         @Override
@@ -61,16 +56,16 @@ public class WindApp {
                             }
                             collector.collect (integer);
                         }
-                    }).map (reading -> "!!! READINGS: " + reading).print ( );
+                    }).map (reading -> " ~~ Normal Readings ### Window Reset @@@ READINGS: " + reading).print ( );
 
-            System.out.println ("Normal Reading Execution TRIGGERED!");
+            System.out.println ("Normal Reading Execution TRIGGERED! Waiting for Stream**** ");
 
-        } else {
-            stream.filter (reading -> reading.getvTemp ( ) > 100)
-                    .map (reading -> "~~ WARNING Reading Aobve Threshold ## ALERTING WINDOW @@@@ Readings: " + reading).print ();
 
-            {
-                stream.keyBy (reading -> reading.getvTemp ( ))
+
+
+                stream
+                        .filter (reading -> reading.getvTemp ()>100)
+                        .keyBy (reading -> reading.getvTemp ( ))
                         .window (SlidingTimeWindows.of (Time.seconds (10), Time.seconds (10)))
                         .apply (new WindowFunction <MachineData, Object, Integer, TimeWindow> ( ) {
                             @Override
@@ -81,11 +76,11 @@ public class WindApp {
                                 }
                                 collector.collect (integer);
                             }
-                        }).map (reading -> "!!! READINGS: " + reading).print ( );
-                System.out.println ("ALERT Reading Execution TRIGGERED!");
-            }
-        }
+                        }).map (reading -> " == ALERT !! Warning Reading ABOVE Threshold! ### Recording window @@@ Readings:  " + reading).print ( );
+                System.out.println ("ALERT Reading Execution TRIGGERED! Waiting for Stream**** ");
+
+
         env.execute ("Window Executed!");
+
     }
 }
-
